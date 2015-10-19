@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+	<head>
+    <title>Country GDP vs Easy of business</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+    <style>
+        html, body, div, h1 {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            outline: 0;
+            font-family: arial;
+        }
+        div#header {
+            background-color: #191987;
+            padding: 5px;
+        }
+        div#header h1{
+            color: white;
+        }
+        form {
+            display: inline-block;
+        }
+        p#result {
+            display: inline-block;
+            margin: 0;
+            font-weight: bold;
+        }
+        div#search {
+            padding: 5px;
+            padding-top: 30px;
+            padding-bottom: 30px;
+        }
+        button {
+            background-color: #191987;
+            color: white;
+            border: 0;
+        }
+        ul {
+            list-style-type: none;
+            margin: 0; 
+            padding: 15px;
+        }
+        div#listBlock {
+            float: left;
+            width: 250px;
+        }
+        div#vizBlock {
+            float: left;
+        }
+        circle {
+            opacity: 0.5;
+        }
+    </style>
+	</head>
+
+	<body>
+        <div id="header">
+            <h1> Country GDP vs Easy of business </h1>
+        </div>
+        <div id="search">
+            <form>
+                Search: 
+                <input type="text" id="country" onkeypress="javascript:return ((event.keyCode == 13) ? false : true)">
+                <button type="button" onclick="getCountry()"> GO </button> GDP: 
+            </form>
+            <p id="result"></p>
+        </div>
+        <div id="listBlock">
+            <ul id="list"></ul>
+        </div>
+        <div id="vizBlock">
+            <svg id="viz"></svg>
+        </div>
+        <script type="text/javascript">
+            var countries;
+            d3.csv("data.csv", function(data) {
+                countries = load(data);
+                listCountries(countries);
+                createViz(countries);
+            });
+            console.log(countries);
+            function load(data) {
+                var mappedData = data.map(function(d) {
+                    return {
+                        name: d.Country,
+                        GDP: +d['GDP per Capita'].replace("$","").replace(",",""),
+                        GDPstring: d['GDP per Capita'],
+                        Year: new Date(d.Year).getYear() + 1900
+                    }
+                });
+
+                mappedData = mappedData.filter(function(d) {
+                    return d.Year == 2012;
+                })
+                mappedData = mappedData.sort(function(a,b) {
+                    return d3.ascending(a.name, b.name);
+                });
+                return mappedData;
+            }
+
+            function findGDP(name) {
+                country = countries.filter(function(c) {
+                    return c.name == name;
+                });
+                console.log(country);
+
+                return (country.length == 1) ? (name + ": " + country[0].GDPstring) : "NA";
+            }
+
+            function getCountry() {
+                var country = d3.select("input#country").property("value")
+                console.log(country)
+                var gdp = findGDP(country)
+                d3.select("p#result").text(gdp)
+            }
+            
+            function listCountries(countries) {
+                var list = d3.select("#list").selectAll("li").data(countries, function(c) {
+                    return c.name; 
+                }); 
+                list.enter().append("li").text(function(c) { 
+                    return c.name; 
+                });  
+            }
+            
+            function createViz(countries) {
+                d3.select("#viz").attr("width", 600);
+                var scale = d3.scale.linear();
+                scale.range([10, 590]);
+                scale.domain([0, d3.max(countries, function(c) { return c.GDP; })]);
+                var viz = d3.select("#viz").selectAll("circle").data(countries, function(c) { 
+                    return c.name; 
+                }); 
+                viz.enter().append("circle").attr({
+                    r: 5,
+                    cx: function(d) { return scale(d.GDP) },
+                    cy: 10
+                });
+            }
+
+        </script>
+	</body>
+</html>
